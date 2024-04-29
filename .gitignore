@@ -6,4 +6,6 @@
 /.vscode
 cits3003_project
 cits3003_project.exe
+/lib
+/res
 .DS*
