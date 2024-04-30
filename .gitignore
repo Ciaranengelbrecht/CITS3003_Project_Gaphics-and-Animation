@@ -9,4 +9,6 @@ cits3003_project.exe
 /lib
 /res
 /config
+/CMakeSettings.json
+/CMakeLists.txt
 .DS*
