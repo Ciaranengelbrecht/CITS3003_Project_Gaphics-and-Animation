@@ -122,9 +122,22 @@ void EditorScene::LitMaterialComponent::add_material_imgui_edit_section(MasterRe
     // Set this to true if the user has changed any of the material values, otherwise the changes won't be propagated
     bool material_changed = false;
     ImGui::Text("Material");
-
-    // Add UI controls here
-
+    //part d implementation
+    // Diffuse properties
+    material_changed |= ImGui::ColorEdit3("Diffuse Tint", &material.diffuse_tint[0]);
+    material_changed |= ImGui::DragFloat("Diffuse Factor", &material.diffuse_tint.a, 0.01f, 0.0f, FLT_MAX);
+    ImGui::Spacing();
+    // Specular properties
+    material_changed |= ImGui::ColorEdit3("Specular Tint", &material.specular_tint[0]);
+    material_changed |= ImGui::DragFloat("Specular Factor", &material.specular_tint.a, 0.01f, 0.0f, FLT_MAX);
+    ImGui::Spacing();
+    // Ambient properties
+    material_changed |= ImGui::ColorEdit3("Ambient Tint", &material.ambient_tint[0]);
+    material_changed |= ImGui::DragFloat("Ambient Factor", &material.ambient_tint.a, 0.01f, 0.0f, FLT_MAX);
+    ImGui::Spacing();
+    // Shininess
+    material_changed |= ImGui::DragFloat("Shininess", &material.shininess, 0.1f, 0.0f, 100.0f);
+    //https://velog.io/@eodls0810/Lighting source reference 
     ImGui::Spacing();
     if (material_changed) {
         update_instance_data();
@@ -152,9 +165,8 @@ void EditorScene::EmissiveMaterialComponent::add_emissive_material_imgui_edit_se
     // Set this to true if the user has changed any of the material values, otherwise the changes won't be propagated
     bool material_changed = false;
     ImGui::Text("Emissive Material");
-
-    // Add UI controls here
-
+    // Emissive colour control
+    material_changed |= ImGui::ColorEdit3("Emission Colour", &material.emission_tint[0]);
     ImGui::Spacing();
     if (material_changed) {
         update_instance_data();
