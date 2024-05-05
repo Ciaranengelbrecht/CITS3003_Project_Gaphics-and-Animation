@@ -122,6 +122,38 @@ void EditorScene::LitMaterialComponent::add_material_imgui_edit_section(MasterRe
     // Set this to true if the user has changed any of the material values, otherwise the changes won't be propagated
     bool material_changed = false;
     ImGui::Text("Material");
+    //part e implementation
+    {
+        // Static also means that all [EntityElement] will share the value
+        static bool lock_tex_scale = true;
+
+        glm::vec2 temp_tex_scale = material.texture_scale;
+        if ( material_changed |= ImGui::DragFloat2("Texture Scale", &temp_tex_scale[0], 0.01f)) {
+            if (lock_tex_scale) {
+                // Assume only channel can change at a time (I think this is true based on how ImGui works?)
+                if (temp_tex_scale.x != material.texture_scale.x) {
+                    if (material.texture_scale.x == 0.0f) {
+                        material.texture_scale = glm::vec2(temp_tex_scale.x);
+                    } else {
+                        material.texture_scale *= temp_tex_scale.x / material.texture_scale.x;
+                    }
+                } else if (temp_tex_scale.y != material.texture_scale.y) {
+                    if (material.texture_scale.y == 0.0f) {
+                        material.texture_scale = glm::vec2(temp_tex_scale.y);
+                    } else {
+                        material.texture_scale *= temp_tex_scale.y / material.texture_scale.y;
+                    }
+                }
+            } else {
+                material.texture_scale = temp_tex_scale;
+            }
+        }
+
+        ImGui::SameLine();
+        ImGui::Checkbox("[Lock]##Tex", &lock_tex_scale);
+
+    }
+
     //part d implementation
     // Diffuse properties
     material_changed |= ImGui::ColorEdit3("Diffuse Tint", &material.diffuse_tint[0]);
@@ -150,6 +182,7 @@ void EditorScene::LitMaterialComponent::update_material_from_json(const json& js
     material.specular_tint = m["specular_tint"];
     material.ambient_tint = m["ambient_tint"];
     material.shininess = m["shininess"];
+    material.texture_scale = m["texture_scale"];
 }
 
 json EditorScene::LitMaterialComponent::material_into_json() const {
@@ -158,6 +191,7 @@ json EditorScene::LitMaterialComponent::material_into_json() const {
         {"specular_tint", material.specular_tint},
         {"ambient_tint", material.ambient_tint},
         {"shininess", material.shininess},
+        {"texture_scale", material.texture_scale},
     }};
 }
 

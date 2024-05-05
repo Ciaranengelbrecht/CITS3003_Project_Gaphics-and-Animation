@@ -40,6 +40,7 @@ void BasicStaticScene::open(const SceneContext& scene_context) {
                 glm::vec4(1.0f),
                 glm::vec4(1.0f),
                 128.0f,
+                {1.0f, 1.0f},
             }
         },
         EntityRenderer::RenderData{
@@ -58,6 +59,7 @@ void BasicStaticScene::open(const SceneContext& scene_context) {
                 glm::vec4(1.0f),
                 glm::vec4(1.0f),
                 32.0f,
+                {1.0f, 1.0f},
             }
         },
         EntityRenderer::RenderData{
@@ -91,6 +93,7 @@ void BasicStaticScene::open(const SceneContext& scene_context) {
                 glm::vec4(glm::vec3(1.0f), 0.75f),
                 glm::vec4(1.0f),
                 512.0f,
+                {1.0f, 1.0f},
             }
         },
         EntityRenderer::RenderData{

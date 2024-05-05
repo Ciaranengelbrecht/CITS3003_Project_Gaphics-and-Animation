@@ -13,6 +13,7 @@ std::unique_ptr<EditorScene::EntityElement> EditorScene::EntityElement::new_defa
                 {1.0f, 1.0f, 1.0f, 1.0f},
                 {1.0f, 1.0f, 1.0f, 1.0f},
                 512.0f,
+                {1.0f, 1.0f},
             }
         },
         EntityRenderer::RenderData{
@@ -75,6 +76,7 @@ void EditorScene::EntityElement::add_imgui_edit_section(MasterRenderScene& rende
     scene_context.model_loader.add_imgui_model_selector("Model Selection", rendered_entity->model);
     scene_context.texture_loader.add_imgui_texture_selector("Diffuse Texture", rendered_entity->render_data.diffuse_texture);
     scene_context.texture_loader.add_imgui_texture_selector("Specular Map", rendered_entity->render_data.specular_map_texture, false);
+
     ImGui::Spacing();
 }
 
@@ -88,6 +90,7 @@ void EditorScene::EntityElement::update_instance_data() {
 
     rendered_entity->instance_data.model_matrix = transform;
     rendered_entity->instance_data.material = material;
+
 }
 
 const char* EditorScene::EntityElement::element_type_name() const {

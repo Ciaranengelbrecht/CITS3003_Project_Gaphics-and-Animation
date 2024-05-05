@@ -13,6 +13,7 @@ std::unique_ptr<EditorScene::AnimatedEntityElement> EditorScene::AnimatedEntityE
             {1.0f, 1.0f, 1.0f, 1.0f},
             {1.0f, 1.0f, 1.0f, 1.0f},
             512.0f,
+            {1.0f, 1.0f},
         }},
         AnimatedEntityRenderer::RenderData{
             scene_context.texture_loader.default_white_texture(),
