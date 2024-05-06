@@ -186,6 +186,7 @@ void TextureLoader::add_imgui_texture_selector(const std::string& caption, std::
     }
 
     ImGui::PopItemWidth();
+
 }
 
 const std::vector<std::string>& TextureLoader::get_available_textures(bool force_refresh) {

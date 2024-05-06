@@ -48,6 +48,8 @@ public:
 
     void use() const;
 
+    void swap_mode(int shader_mode);
+
     /// Fetch the newest version of the shaders from disk and try to compile them, prints errors if but keeps working if
     /// the is an issue with the new shaders.
     bool reload_files();

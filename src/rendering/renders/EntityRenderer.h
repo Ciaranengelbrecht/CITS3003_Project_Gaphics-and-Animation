@@ -56,6 +56,8 @@ namespace EntityRenderer {
         void render(const RenderScene& render_scene, const LightScene& light_scene);
 
         bool refresh_shaders();
+
+        void swap_mode(int shader_mode);
     };
 }
 

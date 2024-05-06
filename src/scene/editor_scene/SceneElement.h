@@ -108,6 +108,8 @@ namespace EditorScene {
 
         void add_material_imgui_edit_section(MasterRenderScene& render_scene, const SceneContext& scene_context);
 
+        void add_texture_imgui_edit_section(const std::shared_ptr<TextureHandle> &texture);
+
         void update_material_from_json(const json& json);
         [[nodiscard]] json material_into_json() const;
     };

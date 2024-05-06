@@ -30,6 +30,11 @@ void ShaderInterface::use() const {
     glUseProgram(program_id);
 }
 
+//its a little excessive, but this enables you to switch between per-vertex and per-fragment shading
+void ShaderInterface::swap_mode(int shader_mode) {
+    glProgramUniform1i(id(), get_uniform_location("shader_mode"), shader_mode);
+}
+
 bool ShaderInterface::reload_files() {
     auto old_vertex_code = vertex_code;
     auto old_fragment_code = fragment_code;

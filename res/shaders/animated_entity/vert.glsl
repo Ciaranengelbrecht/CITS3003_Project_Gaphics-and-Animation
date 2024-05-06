@@ -9,13 +9,21 @@ layout(location = 2) in vec2 texture_coordinate;
 layout(location = 3) in vec4 bone_weights;
 layout(location = 4) in uvec4 bone_indices;
 
+//get light pipeline mode
+uniform int shader_mode;
+
 out VertexOut {
-    LightingResult lighting_result;
     vec2 texture_coordinate;
+
+    vec3 ws_position;
+    vec3 ws_normal;
+
+    LightingResult lighting_result;
 } vertex_out;
 
 // Per instance data
 uniform mat4 model_matrix;
+uniform mat3 normal_matrix;
 
 // Material properties
 uniform vec3 diffuse_tint;
@@ -42,6 +50,19 @@ uniform mat4 projection_view_matrix;
 
 uniform sampler2D specular_map_texture;
 
+LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
+    // Per vertex lighting
+    vec3 ws_view_dir = normalize(ws_view_position - ws_position);
+    LightCalculatioData light_calculation_data = LightCalculatioData(ws_position, ws_view_dir, ws_normal);
+    Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
+
+    return total_light_calculation(light_calculation_data, material
+    #if NUM_PL > 0
+    ,point_lights
+    #endif
+    );
+}
+
 void main() {
     // Transform vertices
     float sum = dot(bone_weights, vec4(1.0f));
@@ -57,7 +78,9 @@ void main() {
     mat3 normal_matrix = cofactor(animation_matrix);
 
     vec3 ws_position = (animation_matrix * vec4(vertex_position, 1.0f)).xyz;
+    vertex_out.ws_position = ws_position;
     vec3 ws_normal = normalize(normal_matrix * normal);
+    vertex_out.ws_normal = ws_normal;
 
     //apply texture scaling on texture coordinate space
     vertex_out.texture_coordinate = texture_coordinate * texture_scale;
@@ -65,13 +88,7 @@ void main() {
     gl_Position = projection_view_matrix * vec4(ws_position, 1.0f);
 
     // Per vertex light calcs are below this point
-    vec3 ws_view_dir = normalize(ws_view_position - ws_position);
-    LightCalculatioData light_calculation_data = LightCalculatioData(ws_position, ws_view_dir, ws_normal);
-    Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
-
-    vertex_out.lighting_result = total_light_calculation(light_calculation_data, material
-        #if NUM_PL > 0
-        ,point_lights
-        #endif
-    );
+    if(shader_mode == 0){
+        vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
+    }
 }

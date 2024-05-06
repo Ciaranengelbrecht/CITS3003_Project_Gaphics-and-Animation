@@ -6,9 +6,17 @@ layout(location = 0) in vec3 vertex_position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texture_coordinate;
 
+//get light pipeline mode
+uniform int shader_mode;
+
 out VertexOut {
-    LightingResult lighting_result;
     vec2 texture_coordinate;
+
+    vec3 ws_position;
+    vec3 ws_normal;
+
+    LightingResult lighting_result;
+
 } vertex_out;
 
 // Per instance data
@@ -24,7 +32,7 @@ uniform float shininess;
 //texture scaling attribute
 uniform vec2 texture_scale;
 
-// Light Data
+// Get Light Data
 #if NUM_PL > 0
 layout (std140) uniform PointLightArray {
     PointLightData point_lights[NUM_PL];
@@ -35,23 +43,35 @@ layout (std140) uniform PointLightArray {
 uniform vec3 ws_view_position;
 uniform mat4 projection_view_matrix;
 
-void main() {
-    // Transform vertices
-    vec3 ws_position = (model_matrix * vec4(vertex_position, 1.0f)).xyz;
-    vec3 ws_normal = normalize(normal_matrix * normal);
-    //apply texture scaling on texture coordinate space
-    vertex_out.texture_coordinate = texture_coordinate * texture_scale;
-
-    gl_Position = projection_view_matrix * vec4(ws_position, 1.0f);
-
+LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
     // Per vertex lighting
     vec3 ws_view_dir = normalize(ws_view_position - ws_position);
     LightCalculatioData light_calculation_data = LightCalculatioData(ws_position, ws_view_dir, ws_normal);
     Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
 
-    vertex_out.lighting_result = total_light_calculation(light_calculation_data, material
-        #if NUM_PL > 0
-        ,point_lights
-        #endif
+    return total_light_calculation(light_calculation_data, material
+    #if NUM_PL > 0
+    ,point_lights
+    #endif
     );
 }
+
+void main() {
+
+    // Transform vertices
+    vec3 ws_position = (model_matrix * vec4(vertex_position, 1.0f)).xyz;
+    vertex_out.ws_position = ws_position;
+    vec3 ws_normal = normalize(normal_matrix * normal);
+    vertex_out.ws_normal = ws_normal;
+
+    //apply texture scaling on texture coordinate space
+    vertex_out.texture_coordinate = texture_coordinate * texture_scale;
+
+    gl_Position = projection_view_matrix * vec4(vertex_out.ws_position, 1.0f);
+
+    if(shader_mode == 0){
+        vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
+    }
+
+}
+

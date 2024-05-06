@@ -24,6 +24,9 @@ class TextureHandle : private NonCopyable {
 public:
     TextureHandle(uint texture_id, uint width, uint height, bool srgb = true, bool flipped = false, std::optional<std::string> filename = {});
 
+    TextureHandle(uint texture_id, uint width, uint height, uint scale_x, uint scale_y, bool srgb, bool flipped,
+                  std::optional<std::string> filename);
+
     [[nodiscard]] uint get_texture_id() const;
     [[nodiscard]] glm::uvec2 get_size() const;
     [[nodiscard]] uint get_width() const;

@@ -54,6 +54,11 @@ void EntityRenderer::EntityRenderer::render(const RenderScene& render_scene, con
     }
 }
 
+void EntityRenderer::EntityRenderer::swap_mode(int shader_mode) {
+    shader.swap_mode(shader_mode);
+}
+
+
 bool EntityRenderer::EntityRenderer::refresh_shaders() {
     return shader.reload_files();
 }
