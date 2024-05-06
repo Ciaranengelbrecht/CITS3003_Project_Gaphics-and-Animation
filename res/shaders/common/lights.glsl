@@ -29,19 +29,24 @@ const float ambient_factor = 0.002f;
 // Point Lights
 void point_light_calculation(PointLightData point_light, LightCalculatioData calculation_data, float shininess, inout vec3 total_diffuse, inout vec3 total_specular, inout vec3 total_ambient) {
     vec3 ws_light_offset = point_light.position - calculation_data.ws_frag_position;
+    float distance = length(ws_light_offset);
+    //similar to video:formula derived from https://gamedev.stackexchange.com/questions/131372/light-attenuation-formula-derivation
+    float attenuation = 1.0 / (1.0 + distance * distance);
+    //potentially better formula derives from: https://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
+    //float attenuation = 1.0 / (1.0 + 0.1*distance * 0.01*distance*distance);
 
     // Ambient
-    vec3 ambient_component = ambient_factor * point_light.colour;
+    vec3 ambient_component = ambient_factor * point_light.colour * attenuation;
 
     // Diffuse
     vec3 ws_light_dir = normalize(ws_light_offset);
     float diffuse_factor = max(dot(ws_light_dir, calculation_data.ws_normal), 0.0f);
-    vec3 diffuse_component = diffuse_factor * point_light.colour;
+    vec3 diffuse_component = diffuse_factor * point_light.colour * attenuation;
 
     // Specular
     vec3 ws_halfway_dir = normalize(ws_light_dir + calculation_data.ws_view_dir);
     float specular_factor = pow(max(dot(calculation_data.ws_normal, ws_halfway_dir), 0.0f), shininess);
-    vec3 specular_component = specular_factor * point_light.colour;
+    vec3 specular_component = specular_factor * point_light.colour * attenuation;
 
     total_diffuse += diffuse_component;
     total_specular += specular_component;
