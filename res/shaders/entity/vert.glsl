@@ -10,12 +10,14 @@ layout(location = 2) in vec2 texture_coordinate;
 uniform int shader_mode;
 
 out VertexOut {
+    LightingResult lighting_result;
+
+    //texture coordinates
     vec2 texture_coordinate;
 
+    //position and normals from vertex shader
     vec3 ws_position;
     vec3 ws_normal;
-
-    LightingResult lighting_result;
 
 } vertex_out;
 
@@ -69,7 +71,7 @@ void main() {
 
     gl_Position = projection_view_matrix * vec4(vertex_out.ws_position, 1.0f);
 
-    if(shader_mode == 0){
+    if(shader_mode == 1){
         vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
     }
 

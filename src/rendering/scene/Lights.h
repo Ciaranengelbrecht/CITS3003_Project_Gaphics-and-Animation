@@ -34,6 +34,36 @@ struct PointLight {
     };
 };
 
+/// A representation of a DirectionalLight render scene element
+struct DirectionalLight {
+    DirectionalLight() = default;
+
+    DirectionalLight(const glm::vec3& position, const glm::vec3& direction, const glm::vec4& colour) :
+         position(position), direction(direction), colour(colour) {}
+
+    static DirectionalLight off() {
+        return {glm::vec3{}, glm::vec3{}, glm::vec4{}};
+    }
+
+    static std::shared_ptr<DirectionalLight> create(const glm::vec3& position, const glm::vec3& direction, const glm::vec4& colour) {
+        return std::make_shared<DirectionalLight>(position, direction, colour);
+    }
+
+    glm::vec3 position{};
+    //store the direction vector of the light
+    glm::vec3 direction{};
+    // Alpha components are just used to store a scalar that is applied before passing to the GPU
+    glm::vec4 colour{};
+
+    // On GPU format
+    // alignas used to conform to std140 for direct binary usage with glsl
+    struct Data {
+        alignas(16) glm::vec3 position;
+        alignas(16) glm::vec3 directon;
+        alignas(16) glm::vec3 colour;
+    };
+};
+
 /// A collection of each light type, with helpers that allow for selecting a subset of
 /// those lights on a proximity basis, since processing an unbounded number of lights on the GPU is bad idea.
 struct LightScene {

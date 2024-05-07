@@ -53,6 +53,10 @@ add_executable(cits3003_project
         src/scene/editor_scene/GroupElement.cpp
         src/scene/editor_scene/EmissiveEntityElement.cpp
         src/scene/editor_scene/SceneElement.cpp
+        src/scene/editor_scene/DirectionalLightElement.cpp
+        src/scene/editor_scene/DirectionalLightElement.h
+        src/scene/editor_scene/DirectionalLightElement.h
+        src/scene/editor_scene/DirectionalLightElement.h
 )
 
 target_include_directories(cits3003_project PRIVATE src)

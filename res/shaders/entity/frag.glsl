@@ -44,13 +44,13 @@ layout (std140) uniform PointLightArray {
 vec3 resolveFragmentLighting(){
 
     vec3 ws_view_dir = normalize(ws_view_position - frag_in.ws_position);
-    LightCalculatioData light_calculation_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
-    Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
 
     LightingResult lighting_result;
-    if(shader_mode == 0){
+    if(shader_mode == 1){
         lighting_result = frag_in.lighting_result;
     } else {
+        LightCalculatioData light_calculation_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
+        Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
         lighting_result = total_light_calculation(light_calculation_data, material
         #if NUM_PL > 0
         , point_lights

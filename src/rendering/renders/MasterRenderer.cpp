@@ -87,25 +87,25 @@ void MasterRenderer::add_imgui_options_section(WindowManager& window_manager) {
             }
             ImGui::PopStyleColor();
         }
-        static int shader_mode = 1;
+        static int shader_mode = 0;
         ImGui::Text("Calculate Light in:");
 
         ImGui::SameLine();
 
-        if(ImGui::BeginCombo("##LightCalcSelector", shader_mode == 1? "Fragment Shader" : "Vertex Shader", 0)) {
+        if(ImGui::BeginCombo("##LightCalcSelector", shader_mode == 1? "Vertex Shader" : "Fragment Shader", 0)) {
 
             if(ImGui::Selectable("Fragment Shader")) {
-                shader_mode = 1;
+                shader_mode = 0;
             }
             if(ImGui::Selectable("Vertex Shader")) {
-                shader_mode = 0;
+                shader_mode = 1;
             }
 
             ImGui::EndCombo();
         }
         if (ImGui::Button("Apply")) {
             entity_renderer.swap_mode(shader_mode);
-            std::cout << "Performing Light Calculations in the " << (shader_mode == 1 ? "Fragment Shader" : "Vertex Shader") << std::endl;
+            std::cout << "Performing Light Calculations in the " << (shader_mode == 0 ? "Vertex Shader" : "Fragment Shader") << std::endl;
         }
 
     }
