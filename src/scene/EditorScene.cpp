@@ -85,10 +85,49 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
         )
     );
 
+    auto default_dir_light = std::make_unique<DirectionalLightElement>(
+        NullElementRef,
+        "New Directional Light",
+        glm::vec3{0.0f, 1.0f, 0.0f},
+        glm::vec3{0.0f, 0.0f, 0.0f}, // face down by default
+        DirectionalLight::create(
+            glm::vec3{},    //position Set via update_instance_data()
+            glm::vec3{},
+            glm::vec4{1.0f}
+        ),
+        EmissiveEntityRenderer::Entity::create(
+            scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("arrow.obj"),
+            EmissiveEntityRenderer::InstanceData{
+                glm::mat4{}, // Set via update_instance_data()
+                EmissiveEntityRenderer::EmissiveEntityMaterial{
+                    glm::vec4{1.0f}
+                }
+            },
+            EmissiveEntityRenderer::RenderData{
+                scene_context.texture_loader.default_white_texture()
+            }
+        ),
+        EmissiveEntityRenderer::Entity::create(
+            scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("sphere.obj"),
+            EmissiveEntityRenderer::InstanceData{
+                glm::mat4{},
+                EmissiveEntityRenderer::EmissiveEntityMaterial{
+                    glm::vec4{1.0f}
+                }
+            },
+            EmissiveEntityRenderer::RenderData{
+                scene_context.texture_loader.default_white_texture()
+            }));
+
     /// Update the transform, to propagate the position, rotation, scale, etc.. from the SceneElement to the actual Entity
     default_light->update_instance_data();
     /// Add the SceneElement to the render scene, and add to the root of the tree
     default_light->add_to_render_scene(render_scene);
+
+    default_dir_light->update_instance_data();
+    default_dir_light->add_to_render_scene(render_scene);
+
+    scene_root->push_back(std::move(default_dir_light));
     scene_root->push_back(std::move(default_light));
 
     /// Setup all the generates

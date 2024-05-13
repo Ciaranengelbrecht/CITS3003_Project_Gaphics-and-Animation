@@ -22,9 +22,10 @@ namespace EditorScene {
         // PointLight and Entity will store World position
         std::shared_ptr<DirectionalLight> light;
         std::shared_ptr<EmissiveEntityRenderer::Entity> light_cone;
+        std::shared_ptr<EmissiveEntityRenderer::Entity> direction_point;
 
-        DirectionalLightElement(const ElementRef& parent, std::string name, glm::vec3 position, glm::vec3 direction, std::shared_ptr<DirectionalLight> light, std::shared_ptr<EmissiveEntityRenderer::Entity> light_cone) :
-            SceneElement(parent, std::move(name)), position(position), direction(direction), light(std::move(light)), light_cone(std::move(light_cone)) {}
+        DirectionalLightElement(const ElementRef& parent, std::string name, glm::vec3 position, glm::vec3 direction, std::shared_ptr<DirectionalLight> light, std::shared_ptr<EmissiveEntityRenderer::Entity> light_cone, std::shared_ptr<EmissiveEntityRenderer::Entity> direction_point) :
+            SceneElement(parent, std::move(name)), position(position), direction(direction), light(std::move(light)), light_cone(std::move(light_cone)), direction_point(std::move(direction_point)) {}
 
         static std::unique_ptr<DirectionalLightElement> new_default(const SceneContext& scene_context, ElementRef parent);
         static std::unique_ptr<DirectionalLightElement> from_json(const SceneContext& scene_context, ElementRef parent, const json& j);
@@ -33,17 +34,17 @@ namespace EditorScene {
 
         void add_imgui_edit_section(MasterRenderScene& render_scene, const SceneContext& scene_context) override;
 
-        glm::mat4 get_direction();
-
         void update_instance_data() override;
 
         void add_to_render_scene(MasterRenderScene& target_render_scene) override {
             target_render_scene.insert_entity(light_cone);
-            // target_render_scene.insert_light(light);
+            target_render_scene.insert_entity(direction_point);
+            //target_render_scene.insert_light(light);
         }
 
         void remove_from_render_scene(MasterRenderScene& target_render_scene) override {
             target_render_scene.remove_entity(light_cone);
+            target_render_scene.remove_entity(direction_point);
             // target_render_scene.remove_light(light);
         }
 

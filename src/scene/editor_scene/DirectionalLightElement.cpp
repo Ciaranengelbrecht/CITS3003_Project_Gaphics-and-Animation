@@ -1,11 +1,14 @@
 #include "DirectionalLightElement.h"
 
+#include <unistd.h>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtx/component_wise.hpp>
 
 #include "rendering/imgui/ImGuiManager.h"
 #include "scene/SceneContext.h"
 
+/*  Instantiate a default directional light
+ */
 std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLightElement::new_default(const SceneContext& scene_context, EditorScene::ElementRef parent) {
     auto light_element = std::make_unique<DirectionalLightElement>(
         parent,
@@ -28,7 +31,19 @@ std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLi
             EmissiveEntityRenderer::RenderData{
                 scene_context.texture_loader.default_white_texture()
             }
-        )
+        ),
+        EmissiveEntityRenderer::Entity::create(
+            scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("sphere.obj"),
+            EmissiveEntityRenderer::InstanceData{
+                glm::mat4{},
+                EmissiveEntityRenderer::EmissiveEntityMaterial{
+                    glm::vec4{1.0f}
+                }
+            },
+            EmissiveEntityRenderer::RenderData{
+                scene_context.texture_loader.default_white_texture()
+            }
+            )
     );
 
     light_element->update_instance_data();
@@ -48,6 +63,10 @@ std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLi
     return light_element;
 }
 
+/*  Get the element variables into JSON format
+ *  Compared to the Point Light element, an extra "direction" element is stored
+ *  This is the offset from the object center where the (local) Z-axis aligns to
+ */
 json EditorScene::DirectionalLightElement::into_json() const {
     return {
         {"position",     position},
@@ -58,22 +77,36 @@ json EditorScene::DirectionalLightElement::into_json() const {
     };
 }
 
+/*  add_imgui_edit_section defines the imgui elements required for the directional light
+ *  "Local Transformation": the position of the object relative to global center
+ *  "Direction": the offset coordinates which the z-axis points to
+ *  "Light Properties": the color properties of the light
+ *  "Visuals": the viewport properties of the light (scale, visibility, etc)
+ */
 void EditorScene::DirectionalLightElement::add_imgui_edit_section(MasterRenderScene& render_scene, const SceneContext& scene_context) {
     ImGui::Text("Directional Light");
     SceneElement::add_imgui_edit_section(render_scene, scene_context);
 
-    ImGui::Text("Local Transformation");
+    static bool linkTransforms = false;
+
     bool transformUpdated = false;
-    transformUpdated |= ImGui::DragFloat3("Translation", &position[0], 0.01f);
+
+    //store a seperate variable deltaTranslate
+    static glm::vec3 deltaTranslate = position;
+    transformUpdated |= ImGui::DragFloat3("Translation", &deltaTranslate[0], 0.01f);
     ImGui::DragDisableCursor(scene_context.window);
-    ImGui::Spacing();
+
+    transformUpdated |= ImGui::Checkbox("[Link]", &linkTransforms);
 
     // TODO: update direction facing
-    ImGui::Text("Direction");
-    bool directionUpdated = false;
-    directionUpdated |= ImGui::DragFloat3("Direction", &direction[0], 0.01f);
+    glm::vec3 newDirection = direction;
+    if(linkTransforms) {
+        newDirection += (deltaTranslate - position);
+    }
+
+    transformUpdated |= ImGui::DragFloat3("Direction", &newDirection[0], 0.01f);
     ImGui::DragDisableCursor(scene_context.window);
-    ImGui::Spacing();
+
 
     ImGui::Text("Light Properties");
     transformUpdated |= ImGui::ColorEdit3("Colour", &light->colour[0]);
@@ -88,46 +121,69 @@ void EditorScene::DirectionalLightElement::add_imgui_edit_section(MasterRenderSc
     transformUpdated |= ImGui::DragFloat("Visual Scale", &visual_scale, 0.01f, 0.0f, FLT_MAX);
     ImGui::DragDisableCursor(scene_context.window);
 
-    if (transformUpdated || directionUpdated) {
+    if (transformUpdated) {
+
+        position = deltaTranslate;
+        direction = newDirection;
         update_instance_data();
+
     }
 }
 
-glm::mat4 EditorScene::DirectionalLightElement::get_direction() {
-
-    glm::vec3 normal_pos = glm::normalize(position);
-    glm::vec3 normal_dir = glm::normalize(direction);
-    float cosa = glm::dot(normal_pos, normal_dir);
-    glm::clamp(cosa, -1.0f, 1.0f);
-    glm::vec3 axis = glm::cross(normal_pos, normal_dir);
-    glm::mat4 rotation_matrix = glm::rotate(glm::mat4(1.0f), glm::degrees(glm::acos(cosa)), axis);
-    return rotation_matrix;
-}
-
+/*  update_instance_data updates the data of the object
+ *  the transform matrix is obtained and applied to the object
+ *  this is where the get_direction function is called and the returning value is applied to the object
+ */
 void EditorScene::DirectionalLightElement::update_instance_data() {
 
     transform = glm::translate(position);
+    const glm::mat4 transform_dir = glm::translate(direction);
+
+    glm::mat4 object_rot = glm::lookAt(position, direction - position, glm::vec3(0.0, 0.0, -1.0));
 
     if (!EditorScene::is_null(parent)) {
-        // Post multiply by transform so that local transformations are applied first
+        // Post multiply by transform
         transform = (*parent)->transform * transform;
-        // Post multiply the direction
     }
 
-
-    light->position = glm::vec3(transform[3]); // Extract translation from matrix
+    light->position = glm::vec3(transform[3]);      // Extract translation from matrix
+    light->direction = glm::vec3(transform_dir[3]); // Extract direction translation from matrix
     if (visible) {
-        light_cone->instance_data.model_matrix = transform * glm::scale(glm::vec3{0.1f * visual_scale});
-
+        light_cone->instance_data.model_matrix =  transform * glm::inverse(object_rot) * glm::scale(glm::vec3{0.1f * visual_scale});
+        direction_point->instance_data.model_matrix = transform_dir * glm::scale(glm::vec3{0.1f * visual_scale});
     } else {
         // Throw off to infinity as a hacky way to make model invisible
         light_cone->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
+        direction_point->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
     }
+
+
+
+
+    /*  Get the rotation and apply to the transformation matrix
+
+    glm::mat4 directionPointTransform =  glm::translate(direction + light->position);
+    light->direction = glm::vec3(directionPointTransform[3]); //get direction point transform by the offset
+
+    glm::qua<float> rotate_to_qua = glm::rotation(glm::normalize(light->position), glm::normalize(glm::vec3(directionPointTransform[3])));
+    glm::mat4 rotate_to = glm::toMat4(rotate_to_qua);
+    transform = transform * rotate_to;
+    if (visible) {
+        direction_point->instance_data.model_matrix =  transform * glm::scale(glm::vec3{0.1f * visual_scale});
+    } else {
+        // Throw off to infinity as a hacky way to make model invisible
+        direction_point->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
+    }
+    */
+
+
 
     glm::vec3 normalised_colour = glm::vec3(light->colour) / glm::compMax(glm::vec3(light->colour));
     light_cone->instance_data.material.emission_tint = glm::vec4(normalised_colour, light_cone->instance_data.material.emission_tint.a);
 }
 
+/*  get the element type name
+ */
 const char* EditorScene::DirectionalLightElement::element_type_name() const {
     return ELEMENT_TYPE_NAME;
 }
