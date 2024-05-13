@@ -23,6 +23,27 @@ struct PointLightData {
 };
 
 // Calculations
+// Directional Light Structure
+struct DirectionalLight {
+    vec3 direction;
+    vec3 color;
+    float intensity;
+};
+
+uniform DirectionalLight dirLight;
+
+vec3 calculateDirectionalLight(DirectionalLight light, vec3 normal, vec3 viewDir, Material material) {
+    vec3 lightDir = normalize(-light.direction);
+    float diff = max(dot(normal, lightDir), 0.0);
+    vec3 reflectDir = reflect(-lightDir, normal);
+    float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess);
+    
+    vec3 ambient = 0.1 * light.color * light.intensity;
+    vec3 diffuse = diff * light.color * light.intensity;
+    vec3 specular = spec * light.color * light.intensity;
+    
+    return ambient + diffuse + specular;
+}
 
 const float ambient_factor = 0.002f;
 
@@ -84,7 +105,11 @@ LightingResult total_light_calculation(LightCalculatioData light_calculation_dat
     total_diffuse *= material.diffuse_tint;
     total_specular *= material.specular_tint;
     total_ambient *= material.ambient_tint;
-
+ // Calculate directional light contribution
+vec3 dirLightContribution = calculateDirectionalLight(dirLight, light_calculation_data.ws_normal, light_calculation_data.ws_view_dir, material);
+    total_diffuse += dirLightContribution; 
+    total_specular += dirLightContribution; 
+    total_ambient += dirLightContribution; 
     return LightingResult(total_diffuse, total_specular, total_ambient);
 }
 

@@ -41,27 +41,32 @@ layout (std140) uniform PointLightArray {
 };
 #endif
 
-vec3 resolveFragmentLighting(){
-
+vec3 resolveFragmentLighting() {
     vec3 ws_view_dir = normalize(ws_view_position - frag_in.ws_position);
 
-    LightingResult lighting_result;
-    if(shader_mode == 1){
-        lighting_result = frag_in.lighting_result;
-    } else {
-        LightCalculatioData light_calculation_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
-        Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
-        lighting_result = total_light_calculation(light_calculation_data, material
+    // Prepare the material based on the shader uniforms
+    Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
+
+    // Calculate lighting result based on the point lights
+    LightCalculatioData light_calc_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
+    LightingResult lighting_result = total_light_calculation(light_calc_data, material
         #if NUM_PL > 0
         , point_lights
         #endif
-        );
-    }
+    );
 
-    //resolve vertex lighting with frag texture sampling
+    // Calculate the contribution from the directional light
+    vec3 dirLightContribution = calculateDirectionalLight(dirLight, frag_in.ws_normal, ws_view_dir, material);
+
+    // Combine the results from point lights and directional light
+    lighting_result.total_diffuse += dirLightContribution * material.diffuse_tint;
+    lighting_result.total_specular += dirLightContribution * material.specular_tint;
+    lighting_result.total_ambient += dirLightContribution * material.ambient_tint;
+
+    // Resolve the final color using the texture and calculated light
     return resolve_textured_light_calculation(lighting_result, diffuse_texture, specular_map_texture, frag_in.texture_coordinate);
-
 }
+
 
 void main() {
 
