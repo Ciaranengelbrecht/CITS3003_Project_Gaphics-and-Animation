@@ -6,10 +6,6 @@
 #define NUM_DL 0
 #endif
 
-#ifndef SHADER_MODE
-#define SHADER_MODE 0
-#endif
-
 // Material Properties
 struct Material {
     vec3 diffuse_tint;
@@ -31,11 +27,11 @@ struct PointLightData {
 };
 
 struct DirectionalLightData {
-    vec3 position;
     vec3 direction;
-    vec3 colour;
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
 };
-
 
 // Calculations
 
@@ -45,10 +41,7 @@ const float ambient_factor = 0.002f;
 void point_light_calculation(PointLightData point_light, LightCalculatioData calculation_data, float shininess, inout vec3 total_diffuse, inout vec3 total_specular, inout vec3 total_ambient) {
     vec3 ws_light_offset = point_light.position - calculation_data.ws_frag_position;
     float distance = length(ws_light_offset);
-    //similar to video:formula derived from https://gamedev.stackexchange.com/questions/131372/light-attenuation-formula-derivation
     float attenuation = 1.0 / (1.0 + distance * distance);
-    //potentially better formula derives from: https://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
-    //float attenuation = 1.0 / (1.0 + 0.1*distance * 0.01*distance*distance);
 
     // Ambient
     vec3 ambient_component = ambient_factor * point_light.colour * attenuation;
@@ -70,25 +63,19 @@ void point_light_calculation(PointLightData point_light, LightCalculatioData cal
 
 // Directional Lights
 void directional_light_calculation(DirectionalLightData directional_light, LightCalculatioData calculation_data, float shininess, inout vec3 total_diffuse, inout vec3 total_specular, inout vec3 total_ambient) {
-    vec3 ws_light_offset = directional_light.position - calculation_data.ws_frag_position;
-    float distance = length(ws_light_offset);
-    //similar to video:formula derived from https://gamedev.stackexchange.com/questions/131372/light-attenuation-formula-derivation
-    float attenuation = 1.0 / (1.0 + distance * distance);
-    //potentially better formula derives from: https://gamedev.stackexchange.com/questions/56897/glsl-light-attenuation-color-and-intensity-formula
-    //float attenuation = 1.0 / (1.0 + 0.1*distance * 0.01*distance*distance);
+    vec3 lightDir = normalize(directional_light.direction);
+    
+    // Diffuse shading
+    float diff = max(dot(calculation_data.ws_normal, lightDir), 0.0);
+    
+    // Specular shading
+    vec3 reflectDir = reflect(-lightDir, calculation_data.ws_normal);
+    float spec = pow(max(dot(calculation_data.ws_view_dir, reflectDir), 0.0), shininess);
 
-    // Ambient
-    vec3 ambient_component = ambient_factor * directional_light.colour * attenuation;
-
-    // Diffuse
-    vec3 ws_light_dir = normalize(ws_light_offset);
-    float diffuse_factor = max(dot(ws_light_dir, calculation_data.ws_normal), 0.0f);
-    vec3 diffuse_component = diffuse_factor * directional_light.colour * attenuation;
-
-    // Specular
-    vec3 ws_halfway_dir = normalize(ws_light_dir + calculation_data.ws_view_dir);
-    float specular_factor = pow(max(dot(calculation_data.ws_normal, ws_halfway_dir), 0.0f), shininess);
-    vec3 specular_component = specular_factor * directional_light.colour * attenuation;
+    // Combine results
+    vec3 ambient_component = directional_light.ambient * ambient_factor;
+    vec3 diffuse_component = directional_light.diffuse * diff;
+    vec3 specular_component = directional_light.specular * spec;
 
     total_diffuse += diffuse_component;
     total_specular += specular_component;
@@ -128,14 +115,6 @@ LightingResult total_light_calculation(LightCalculatioData light_calculation_dat
     }
     #endif
 
-    #if NUM_PL > 0
-    total_ambient /= float(NUM_PL);
-    #endif
-
-    #if NUM_DL > 0
-    total_ambient /= float(NUM_DL);
-    #endif
-
     total_diffuse *= material.diffuse_tint;
     total_specular *= material.specular_tint;
     total_ambient *= material.ambient_tint;
@@ -151,6 +130,5 @@ vec3 resolve_textured_light_calculation(LightingResult result, sampler2D diffuse
     vec3 sampled_specular = result.total_specular * specular_map_sample;
     vec3 textured_ambient = result.total_ambient * texture_colour;
 
-    // Mix the diffuse and ambient so that there is no ambient in bright scenes
     return max(textured_diffuse, textured_ambient) + sampled_specular;
 }
