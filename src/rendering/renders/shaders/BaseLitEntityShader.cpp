@@ -2,12 +2,13 @@
 
 #include <utility>
 
-BaseLitEntityShader::BaseLitEntityShader(std::string name, const std::string& vertex_path, const std::string& fragment_path,
+BaseLitEntityShader::BaseLitEntityShader(std::string name, const std::string &vertex_path,
+                                         const std::string &fragment_path,
                                          std::unordered_map<std::string, std::string> vert_defines,
                                          std::unordered_map<std::string, std::string> frag_defines) :
     BaseEntityShader(std::move(name), vertex_path, fragment_path, std::move(vert_defines), std::move(frag_defines)),
-    point_lights_ubo({}, false) {
-
+    point_lights_ubo({}, false),
+    directional_lights_ubo({}, false) {
     get_uniforms_set_bindings();
 }
 
@@ -22,9 +23,13 @@ void BaseLitEntityShader::get_uniforms_set_bindings() {
     // Texture sampler bindings
     set_binding("diffuse_texture", 0);
     set_binding("specular_map_texture", 1);
+
     // Uniform block bindings
     set_block_binding("PointLightArray", POINT_LIGHT_BINDING);
+    set_block_binding("DirectionalLightArray", DIRECTIONAL_LIGHT_BINDING);
+
 }
+
 
 void BaseLitEntityShader::set_instance_data(const BaseLitEntityInstanceData& instance_data) {
     BaseEntityShader::set_instance_data(instance_data);
@@ -59,6 +64,28 @@ void BaseLitEntityShader::set_point_lights(const std::vector<PointLight>& point_
     // Define NUM_PL for both vertex and fragment shaders so I can switch between them
     set_vert_define("NUM_PL", Formatter() << count);
     set_frag_define("NUM_PL", Formatter() << count);
+    std::cout << "NUM_PL: " << count << "\n";
+
     point_lights_ubo.bind(POINT_LIGHT_BINDING);
     point_lights_ubo.upload();
+}
+
+void BaseLitEntityShader::set_directional_lights(const std::vector<DirectionalLight>& directional_lights) {
+    uint count = std::min(MAX_DL, (uint) directional_lights.size());
+
+    for (uint i = 0; i < count; i++) {
+        const DirectionalLight& directional_light = directional_lights[i];
+
+        glm::vec3 scaled_colour = glm::vec3(directional_light.colour) * directional_light.colour.a;
+
+        directional_lights_ubo.data[i].position = directional_light.position;
+        directional_lights_ubo.data[i].colour = scaled_colour;
+    }
+
+    // Define NUM_DL for both vertex and fragment shaders so I can switch between them
+    set_vert_define("NUM_DL", Formatter() << count);
+    set_frag_define("NUM_DL", Formatter() << count);
+    std::cout << "NUM_DL: " << count <<  "\n";;
+    directional_lights_ubo.bind(DIRECTIONAL_LIGHT_BINDING);
+    directional_lights_ubo.upload();
 }

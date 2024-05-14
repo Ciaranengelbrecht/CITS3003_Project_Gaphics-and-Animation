@@ -87,20 +87,20 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
 
     auto default_dir_light = std::make_unique<DirectionalLightElement>(
         NullElementRef,
-        "New Directional Light",
-        glm::vec3{0.0f, 1.0f, 0.0f},
+        "Default Directional Light",
+        glm::vec3{0.0f, 3.0f, 2.0f},
         glm::vec3{0.0f, 0.0f, 0.0f}, // face down by default
         DirectionalLight::create(
             glm::vec3{},    //position Set via update_instance_data()
             glm::vec3{},
-            glm::vec4{1.0f}
+            glm::vec4{default_light_col, 1.0f}
         ),
         EmissiveEntityRenderer::Entity::create(
             scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("arrow.obj"),
             EmissiveEntityRenderer::InstanceData{
-                glm::mat4{}, // Set via update_instance_data()
+                glm::mat4{1.0f}, // Set via update_instance_data()
                 EmissiveEntityRenderer::EmissiveEntityMaterial{
-                    glm::vec4{1.0f}
+                    glm::vec4{default_light_col, 1.0f}
                 }
             },
             EmissiveEntityRenderer::RenderData{
@@ -110,9 +110,9 @@ void EditorScene::EditorScene::open(const SceneContext& scene_context) {
         EmissiveEntityRenderer::Entity::create(
             scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("sphere.obj"),
             EmissiveEntityRenderer::InstanceData{
-                glm::mat4{},
+                glm::mat4{1.0f},
                 EmissiveEntityRenderer::EmissiveEntityMaterial{
-                    glm::vec4{1.0f}
+                    glm::vec4{default_light_col, 1.0f}
                 }
             },
             EmissiveEntityRenderer::RenderData{

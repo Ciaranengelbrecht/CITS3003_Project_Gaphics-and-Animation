@@ -39,13 +39,13 @@ namespace EditorScene {
         void add_to_render_scene(MasterRenderScene& target_render_scene) override {
             target_render_scene.insert_entity(light_cone);
             target_render_scene.insert_entity(direction_point);
-            //target_render_scene.insert_light(light);
+            target_render_scene.insert_direct_light(light);
         }
 
         void remove_from_render_scene(MasterRenderScene& target_render_scene) override {
             target_render_scene.remove_entity(light_cone);
             target_render_scene.remove_entity(direction_point);
-            // target_render_scene.remove_light(light);
+            target_render_scene.remove_direct_light(light);
         }
 
         [[nodiscard]] const char* element_type_name() const override;

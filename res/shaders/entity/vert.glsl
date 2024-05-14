@@ -6,11 +6,30 @@ layout(location = 0) in vec3 vertex_position;
 layout(location = 1) in vec3 normal;
 layout(location = 2) in vec2 texture_coordinate;
 
+// Get Light Data
+#if NUM_PL > 0
+layout (std140) uniform PointLightArray {
+    PointLightData point_lights[NUM_PL];
+};
+#endif
+#if NUM_DL > 0
+layout (std140) uniform DirectionalLightArray {
+    DirectionalLightData directional_lights[NUM_DL];
+};
+#endif
+
 //get light pipeline mode
 uniform int shader_mode;
 
+#ifndef SHADER_MODE
+#define SHADER_MODE shader_mode
+#endif
+
 out VertexOut {
+
+    #if SHADER_MODE == 1
     LightingResult lighting_result;
+    #endif
 
     //texture coordinates
     vec2 texture_coordinate;
@@ -34,17 +53,11 @@ uniform float shininess;
 //texture scaling attribute
 uniform vec2 texture_scale;
 
-// Get Light Data
-#if NUM_PL > 0
-layout (std140) uniform PointLightArray {
-    PointLightData point_lights[NUM_PL];
-};
-#endif
-
 // Global data
 uniform vec3 ws_view_position;
 uniform mat4 projection_view_matrix;
 
+#if SHADER_MODE == 1
 LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
     // Per vertex lighting
     vec3 ws_view_dir = normalize(ws_view_position - ws_position);
@@ -52,11 +65,16 @@ LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
     Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
 
     return total_light_calculation(light_calculation_data, material
+
     #if NUM_PL > 0
-    ,point_lights
+        ,point_lights
+    #endif
+    #if NUM_DL > 0
+        ,directional_lights
     #endif
     );
 }
+#endif
 
 void main() {
 
@@ -71,9 +89,9 @@ void main() {
 
     gl_Position = projection_view_matrix * vec4(vertex_out.ws_position, 1.0f);
 
-    if(shader_mode == 1){
+    #if SHADER_MODE == 1
         vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
-    }
+    #endif
 
 }
 

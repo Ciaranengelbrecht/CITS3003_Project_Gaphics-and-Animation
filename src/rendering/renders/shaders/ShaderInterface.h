@@ -28,6 +28,7 @@ class ShaderInterface {
     std::string shader_name;
     std::string vertex_code;
     std::string fragment_code;
+    uint        shader_mode;
 
     std::string vertex_path;
     std::string fragment_path;
@@ -70,7 +71,7 @@ public:
 private:
     static std::optional<std::string> load_shader_file(const std::string& shader_path);
 
-    static std::optional<std::string> apply_defines_and_includes(const std::string& code, const std::string& shader_path, const std::unordered_map<std::string, std::string>& defines);
+    static std::optional<std::string> apply_defines_and_includes(const std::string& code, const std::string& shader_path, const std::unordered_map<std::string, std::string>& defines, uint shader_mode);
     static std::optional<std::string> apply_includes(const std::string& code, const std::string& shader_path);
 
     static std::optional<uint> compile_shader_code(const std::string& shader_code, uint shader_type, const std::string& shader_name);

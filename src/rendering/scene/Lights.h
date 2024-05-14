@@ -68,6 +68,7 @@ struct DirectionalLight {
 /// those lights on a proximity basis, since processing an unbounded number of lights on the GPU is bad idea.
 struct LightScene {
     std::unordered_set<std::shared_ptr<PointLight>> point_lights;
+    std::unordered_set<std::shared_ptr<DirectionalLight>> directional_lights;
 
     /// Will return up to `max_count` nearest point lights to `target`.
     /// It returns less than `max_count` if there are not that many point lights,
@@ -82,8 +83,9 @@ struct LightScene {
     ///
     ///       So an improvement would be to use a data structure which can accelerate this,
     ///       as well as support incrementally getting the `k` nearest.
-    ///
-    std::vector<PointLight> get_nearest_point_lights(glm::vec3 target, size_t max_count, size_t min_count = 0) const;
+
+    [[nodiscard]] std::vector<PointLight> get_nearest_point_lights(glm::vec3 target, size_t max_count, size_t min_count = 0) const;
+    [[nodiscard]] std::vector<DirectionalLight> get_nearest_directional_lights(glm::vec3 target, size_t max_count, size_t min_count = 0) const;
 
 private:
     template<typename Light>

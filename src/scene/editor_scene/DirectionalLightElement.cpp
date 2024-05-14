@@ -13,11 +13,11 @@ std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLi
     auto light_element = std::make_unique<DirectionalLightElement>(
         parent,
         "New Directional Light",
-        glm::vec3{0.0f, 1.0f, 0.0f},
-        glm::vec3{0.0f, 0.0f, 0.0f}, // face down by default
+        glm::vec3{},
+        glm::vec3{0.0f, 0.0f, 0.0f}, // point at world center by default
         DirectionalLight::create(
             glm::vec3{},    //position Set via update_instance_data()
-            glm::vec3{},    //TODO: direction set via update_instance_data()
+            glm::vec3{0.0f, 0.0f, 0.0f},
             glm::vec4{1.0f}
         ),
         EmissiveEntityRenderer::Entity::create(
@@ -50,6 +50,8 @@ std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLi
     return light_element;
 }
 
+/// TODO:
+///
 std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLightElement::from_json(const SceneContext& scene_context, EditorScene::ElementRef parent, const json& j) {
     auto light_element = new_default(scene_context, parent);
 
@@ -87,23 +89,23 @@ void EditorScene::DirectionalLightElement::add_imgui_edit_section(MasterRenderSc
     ImGui::Text("Directional Light");
     SceneElement::add_imgui_edit_section(render_scene, scene_context);
 
-    static bool linkTransforms = false;
+    static bool linkTransforms = true;
 
     bool transformUpdated = false;
 
     //store a seperate variable deltaTranslate
-    static glm::vec3 deltaTranslate = position;
+    static glm::vec3 deltaTranslate = {};
+    deltaTranslate = position;
     transformUpdated |= ImGui::DragFloat3("Translation", &deltaTranslate[0], 0.01f);
     ImGui::DragDisableCursor(scene_context.window);
 
     transformUpdated |= ImGui::Checkbox("[Link]", &linkTransforms);
 
-    // TODO: update direction facing
-    glm::vec3 newDirection = direction;
+   //check if the transforms need to be linked
+    static glm::vec3 newDirection = direction;
     if(linkTransforms) {
         newDirection += (deltaTranslate - position);
     }
-
     transformUpdated |= ImGui::DragFloat3("Direction", &newDirection[0], 0.01f);
     ImGui::DragDisableCursor(scene_context.window);
 
@@ -137,46 +139,41 @@ void EditorScene::DirectionalLightElement::add_imgui_edit_section(MasterRenderSc
 void EditorScene::DirectionalLightElement::update_instance_data() {
 
     transform = glm::translate(position);
-    const glm::mat4 transform_dir = glm::translate(direction);
+    glm::mat4 transform_dir = glm::translate(direction);
 
-    glm::mat4 object_rot = glm::lookAt(position, direction - position, glm::vec3(0.0, 0.0, -1.0));
+    //get the object origin
+    glm::mat4 model_origin = glm::mat4(         1, 0, 0, 0,
+                                                0, 1, 0, 0,
+                                                0, 0, 1, 0,
+                                                position.x, position.y, position.z, 1);
+
+    glm::mat4 model_orientation = glm::inverse(glm::lookAt(
+            position,
+            direction,
+            glm::vec3(0, 1, 0)
+            ));
 
     if (!EditorScene::is_null(parent)) {
         // Post multiply by transform
         transform = (*parent)->transform * transform;
+        transform_dir = (*parent)->transform * transform_dir;
+    }
+
+    /*  reset origin if objects are clipping */
+    if(direction.x == position.x && direction.z == position.z) {
+        model_orientation = rotate(model_origin, glm::radians(90.0f), glm::vec3(-1, 0, 0));
     }
 
     light->position = glm::vec3(transform[3]);      // Extract translation from matrix
     light->direction = glm::vec3(transform_dir[3]); // Extract direction translation from matrix
     if (visible) {
-        light_cone->instance_data.model_matrix =  transform * glm::inverse(object_rot) * glm::scale(glm::vec3{0.1f * visual_scale});
+        light_cone->instance_data.model_matrix =  transform * glm::scale(glm::vec3{0.1f * visual_scale}) * model_orientation;
         direction_point->instance_data.model_matrix = transform_dir * glm::scale(glm::vec3{0.1f * visual_scale});
     } else {
         // Throw off to infinity as a hacky way to make model invisible
         light_cone->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
         direction_point->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
     }
-
-
-
-
-    /*  Get the rotation and apply to the transformation matrix
-
-    glm::mat4 directionPointTransform =  glm::translate(direction + light->position);
-    light->direction = glm::vec3(directionPointTransform[3]); //get direction point transform by the offset
-
-    glm::qua<float> rotate_to_qua = glm::rotation(glm::normalize(light->position), glm::normalize(glm::vec3(directionPointTransform[3])));
-    glm::mat4 rotate_to = glm::toMat4(rotate_to_qua);
-    transform = transform * rotate_to;
-    if (visible) {
-        direction_point->instance_data.model_matrix =  transform * glm::scale(glm::vec3{0.1f * visual_scale});
-    } else {
-        // Throw off to infinity as a hacky way to make model invisible
-        direction_point->instance_data.model_matrix = glm::scale(glm::vec3{std::numeric_limits<float>::infinity()}) * glm::translate(glm::vec3{std::numeric_limits<float>::infinity()});
-    }
-    */
-
-
 
     glm::vec3 normalised_colour = glm::vec3(light->colour) / glm::compMax(glm::vec3(light->colour));
     light_cone->instance_data.material.emission_tint = glm::vec4(normalised_colour, light_cone->instance_data.material.emission_tint.a);

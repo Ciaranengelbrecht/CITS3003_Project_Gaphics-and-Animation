@@ -10,8 +10,10 @@ ShaderInterface::ShaderInterface(std::string name, const std::string& vertex_pat
     vertex_code = load_shader_file(SHADER_DIR + "/" + vertex_path).value(); // Will throw exception on failure
     fragment_code = load_shader_file(SHADER_DIR + "/" + fragment_path).value(); // Will throw exception on failure
 
-    std::string realisedVertexCode = apply_defines_and_includes(vertex_code, SHADER_DIR + "/" + vertex_path, this->vert_defines).value(); // Will throw exception on failure
-    std::string realisedFragmentCode = apply_defines_and_includes(fragment_code, SHADER_DIR + "/" + fragment_path, this->frag_defines).value(); // Will throw exception on failure
+    shader_mode = 0;
+
+    std::string realisedVertexCode = apply_defines_and_includes(vertex_code, SHADER_DIR + "/" + vertex_path, this->vert_defines, this->shader_mode).value(); // Will throw exception on failure
+    std::string realisedFragmentCode = apply_defines_and_includes(fragment_code, SHADER_DIR + "/" + fragment_path, this->frag_defines, this->shader_mode).value(); // Will throw exception on failure
 
     auto vertexShader = compile_shader_code(realisedVertexCode, GL_VERTEX_SHADER, shader_name).value(); // Will throw exception on failure
     auto fragmentShader = compile_shader_code(realisedFragmentCode, GL_FRAGMENT_SHADER, shader_name).value(); // Will throw exception on failure
@@ -28,11 +30,6 @@ uint ShaderInterface::id() const {
 
 void ShaderInterface::use() const {
     glUseProgram(program_id);
-}
-
-//its a little excessive, but this enables you to switch between per-vertex and per-fragment shading
-void ShaderInterface::swap_mode(int shader_mode) {
-    glProgramUniform1i(id(), get_uniform_location("shader_mode"), shader_mode);
 }
 
 bool ShaderInterface::reload_files() {
@@ -61,8 +58,8 @@ void ShaderInterface::recompile(
     vert_defines = std::move(new_vert_defines);
     frag_defines = std::move(new_frag_defines);
 
-    std::string realised_vertex_code = apply_defines_and_includes(vertex_code, SHADER_DIR + "/" + vertex_path, vert_defines).value(); // Will throw exception on failure;
-    std::string realised_fragment_code = apply_defines_and_includes(fragment_code, SHADER_DIR + "/" + fragment_path, frag_defines).value(); // Will throw exception on failure;
+    std::string realised_vertex_code = apply_defines_and_includes(vertex_code, SHADER_DIR + "/" + vertex_path, vert_defines, this->shader_mode).value(); // Will throw exception on failure;
+    std::string realised_fragment_code = apply_defines_and_includes(fragment_code, SHADER_DIR + "/" + fragment_path, frag_defines, this->shader_mode).value(); // Will throw exception on failure;
 
     uint vertex_shader = compile_shader_code(realised_vertex_code, GL_VERTEX_SHADER, shader_name).value(); // Will throw exception on failure
     uint fragment_shader = compile_shader_code(realised_fragment_code, GL_FRAGMENT_SHADER, shader_name).value(); // Will throw exception on failure
@@ -125,7 +122,8 @@ std::optional<std::string> ShaderInterface::load_shader_file(const std::string& 
 
 std::optional<std::string> ShaderInterface::apply_defines_and_includes(const std::string& code,
                                                                        const std::string& shader_path,
-                                                                       const std::unordered_map<std::string, std::string>& defines) {
+                                                                       const std::unordered_map<std::string, std::string>& defines,
+                                                                       uint shader_mode) {
     std::stringstream output;
 
     auto version_start = code.find("#version", 0);
@@ -136,6 +134,8 @@ std::optional<std::string> ShaderInterface::apply_defines_and_includes(const std
     }
 
     output << code.substr(0, version_line_end + 1);
+
+    output << "#define SHADER_MODE " << shader_mode << "\n";
 
     for (const auto& def: defines) {
         output << "#define " << def.first << " " << def.second << "\n";
@@ -296,13 +296,18 @@ uint ShaderInterface::get_uniform_block_index(const std::string& name) {
     }
 }
 
+void ShaderInterface::swap_mode(int shader_mode) {
+    this->shader_mode = shader_mode;
+    reload_files();
+}
+
+
 void ShaderInterface::set_binding(const std::string& sampler_name, uint binding) {
     glProgramUniform1i(id(), get_uniform_location(sampler_name), binding);
 }
 
 void ShaderInterface::set_block_binding(const std::string& block_name, uint binding) {
     uint index = get_uniform_block_index(block_name);
-    // TODO: Print a warning? Might be wanted, but also might silence an issue
     if (index == GL_INVALID_INDEX) return; // Block name doesn't exist, just ignore setting anything
     glUniformBlockBinding(id(), index, binding);
 }

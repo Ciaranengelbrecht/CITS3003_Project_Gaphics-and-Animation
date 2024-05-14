@@ -66,10 +66,13 @@ void MasterRenderer::add_imgui_options_section(WindowManager& window_manager) {
         }
     }
 
+    static int shader_mode = 0;
+
     if (ImGui::CollapsingHeader("Shader Options")) {
         static int failures = 0;
         static double last_time = -std::numeric_limits<double>::infinity();
         if (ImGui::Button("Reload Shader Files")) {
+            entity_renderer.swap_mode(shader_mode);
             last_time = glfwGetTime();
             failures = 0;
             failures += entity_renderer.refresh_shaders() ? 0 : 1;
@@ -87,7 +90,8 @@ void MasterRenderer::add_imgui_options_section(WindowManager& window_manager) {
             }
             ImGui::PopStyleColor();
         }
-        static int shader_mode = 0;
+
+
         ImGui::Text("Calculate Light in:");
 
         ImGui::SameLine();
@@ -97,15 +101,12 @@ void MasterRenderer::add_imgui_options_section(WindowManager& window_manager) {
             if(ImGui::Selectable("Fragment Shader")) {
                 shader_mode = 0;
             }
+
             if(ImGui::Selectable("Vertex Shader")) {
                 shader_mode = 1;
             }
 
             ImGui::EndCombo();
-        }
-        if (ImGui::Button("Apply")) {
-            entity_renderer.swap_mode(shader_mode);
-            std::cout << "Performing Light Calculations in the " << (shader_mode == 0 ? "Vertex Shader" : "Fragment Shader") << std::endl;
         }
 
     }
