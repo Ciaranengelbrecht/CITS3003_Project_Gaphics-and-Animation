@@ -81,9 +81,10 @@ void directional_light_calculation(DirectionalLightData directional_light, Light
     vec3 ambient_component = ambient_factor * directional_light.colour * attenuation;
 
     // Diffuse
-    vec3 ws_light_dir = normalize(ws_light_offset);
+    vec3 ws_light_dir = normalize(directional_light.direction);
     float diffuse_factor = max(dot(ws_light_dir, calculation_data.ws_normal), 0.0f);
     vec3 diffuse_component = diffuse_factor * directional_light.colour * attenuation;
+
 
     // Specular
     vec3 ws_halfway_dir = normalize(ws_light_dir + calculation_data.ws_view_dir);

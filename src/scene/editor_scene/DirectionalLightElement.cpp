@@ -165,7 +165,9 @@ void EditorScene::DirectionalLightElement::update_instance_data() {
     }
 
     light->position = glm::vec3(transform[3]);      // Extract translation from matrix
-    light->direction = glm::vec3(transform_dir[3]); // Extract direction translation from matrix
+
+    //Get the forward direction from the model orientation
+    light->direction = glm::vec3(model_orientation[2]); // Extract direction translation from matrix
     if (visible) {
         light_cone->instance_data.model_matrix =  transform * glm::scale(glm::vec3{0.1f * visual_scale}) * model_orientation;
         direction_point->instance_data.model_matrix = transform_dir * glm::scale(glm::vec3{0.1f * visual_scale});
