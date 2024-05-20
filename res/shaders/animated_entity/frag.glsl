@@ -4,8 +4,15 @@
 //get light pipeline mode
 uniform int shader_mode;
 
+#ifndef SHADER_MODE
+#define SHADER_MODE shader_mode
+#endif
+
 in VertexOut {
+
+    #if SHADER_MODE == 1
     LightingResult lighting_result;
+    #endif
 
     //texture coordinates
     vec2 texture_coordinate;
@@ -40,27 +47,34 @@ layout (std140) uniform PointLightArray {
     PointLightData point_lights[NUM_PL];
 };
 #endif
+#if NUM_DL > 0
+layout (std140) uniform DirectionalLightArray {
+    DirectionalLightData directional_lights[NUM_DL];
+};
+#endif
 
 vec3 resolveFragmentLighting(){
 
     vec3 ws_view_dir = normalize(ws_view_position - frag_in.ws_position);
-    LightCalculatioData light_calculation_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
-    Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
 
     LightingResult lighting_result;
-    if(shader_mode == 0){
+    #if SHADER_MODE == 1
         lighting_result = frag_in.lighting_result;
-    } else {
+    #else
+        LightCalculatioData light_calculation_data = LightCalculatioData(frag_in.ws_position, ws_view_dir, frag_in.ws_normal);
+        Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
         lighting_result = total_light_calculation(light_calculation_data, material
         #if NUM_PL > 0
-        , point_lights
+            ,point_lights
+        #endif
+        #if NUM_DL > 0
+            ,directional_lights
         #endif
         );
-    }
+    #endif
 
     //resolve vertex lighting with frag texture sampling
     return resolve_textured_light_calculation(lighting_result, diffuse_texture, specular_map_texture, frag_in.texture_coordinate);
-
 }
 
 void main() {

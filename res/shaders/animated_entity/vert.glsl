@@ -2,6 +2,22 @@
 #include "../common/lights.glsl"
 #include "../common/maths.glsl"
 
+#ifndef SHADER_MODE
+#define SHADER_MODE shader_mode
+#endif
+
+// Get Light Data
+#if NUM_PL > 0
+layout (std140) uniform PointLightArray {
+    PointLightData point_lights[NUM_PL];
+};
+#endif
+#if NUM_DL > 0
+layout (std140) uniform DirectionalLightArray {
+    DirectionalLightData directional_lights[NUM_DL];
+};
+#endif
+
 // Per vertex data
 layout(location = 0) in vec3 vertex_position;
 layout(location = 1) in vec3 normal;
@@ -9,16 +25,17 @@ layout(location = 2) in vec2 texture_coordinate;
 layout(location = 3) in vec4 bone_weights;
 layout(location = 4) in uvec4 bone_indices;
 
-//get light pipeline mode
-uniform int shader_mode;
-
 out VertexOut {
+
+    #if SHADER_MODE == 1
+        LightingResult lighting_result;
+    #endif
+
     vec2 texture_coordinate;
 
     vec3 ws_position;
     vec3 ws_normal;
 
-    LightingResult lighting_result;
 } vertex_out;
 
 // Per instance data
@@ -34,13 +51,6 @@ uniform float shininess;
 //get texture scaling attribute
 uniform vec2 texture_scale;
 
-// Light Data
-#if NUM_PL > 0
-layout (std140) uniform PointLightArray {
-    PointLightData point_lights[NUM_PL];
-};
-#endif
-
 // Animation Data
 uniform mat4 bone_transforms[BONE_TRANSFORMS];
 
@@ -50,6 +60,7 @@ uniform mat4 projection_view_matrix;
 
 uniform sampler2D specular_map_texture;
 
+#if SHADER_MODE == 1
 LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
     // Per vertex lighting
     vec3 ws_view_dir = normalize(ws_view_position - ws_position);
@@ -57,11 +68,16 @@ LightingResult resolveVertexLighting(vec3 ws_position, vec3 ws_normal){
     Material material = Material(diffuse_tint, specular_tint, ambient_tint, shininess);
 
     return total_light_calculation(light_calculation_data, material
+
     #if NUM_PL > 0
     ,point_lights
     #endif
+    #if NUM_DL > 0
+    ,directional_lights
+    #endif
     );
 }
+#endif
 
 void main() {
     // Transform vertices
@@ -87,8 +103,7 @@ void main() {
 
     gl_Position = projection_view_matrix * vec4(ws_position, 1.0f);
 
-    // Per vertex light calcs are below this point
-    if(shader_mode == 0){
-        vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
-    }
+    #if SHADER_MODE == 1
+    vertex_out.lighting_result = resolveVertexLighting(ws_position, ws_normal);
+    #endif
 }

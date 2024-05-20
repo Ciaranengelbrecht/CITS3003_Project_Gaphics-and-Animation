@@ -18,9 +18,6 @@ layout (std140) uniform DirectionalLightArray {
 };
 #endif
 
-//get light pipeline mode
-uniform int shader_mode;
-
 #ifndef SHADER_MODE
 #define SHADER_MODE shader_mode
 #endif
