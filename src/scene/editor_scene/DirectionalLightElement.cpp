@@ -9,23 +9,24 @@
 
 /*  Instantiate a default directional light
  */
+auto default_light_col = glm::vec3(1.0f);
 std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLightElement::new_default(const SceneContext& scene_context, EditorScene::ElementRef parent) {
     auto light_element = std::make_unique<DirectionalLightElement>(
-        parent,
+        NullElementRef,
         "New Directional Light",
-        glm::vec3{},
-        glm::vec3{0.0f, 0.0f, 0.0f}, // point at world center by default
+        glm::vec3{0.0f, 3.0f, 2.0f},
+        glm::vec3{0.0f, 0.0f, 0.0f}, // face down by default
         DirectionalLight::create(
             glm::vec3{},    //position Set via update_instance_data()
-            glm::vec3{0.0f, 0.0f, 0.0f},
-            glm::vec4{1.0f}
+            glm::vec3{},
+            glm::vec4{default_light_col, 1.0f}
         ),
         EmissiveEntityRenderer::Entity::create(
             scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("arrow.obj"),
             EmissiveEntityRenderer::InstanceData{
-                glm::mat4{}, // Set via update_instance_data()
+                glm::mat4{1.0f}, // Set via update_instance_data()
                 EmissiveEntityRenderer::EmissiveEntityMaterial{
-                    glm::vec4{1.0f}
+                    glm::vec4{default_light_col, 1.0f}
                 }
             },
             EmissiveEntityRenderer::RenderData{
@@ -35,16 +36,14 @@ std::unique_ptr<EditorScene::DirectionalLightElement> EditorScene::DirectionalLi
         EmissiveEntityRenderer::Entity::create(
             scene_context.model_loader.load_from_file<EmissiveEntityRenderer::VertexData>("sphere.obj"),
             EmissiveEntityRenderer::InstanceData{
-                glm::mat4{},
+                glm::mat4{1.0f},
                 EmissiveEntityRenderer::EmissiveEntityMaterial{
-                    glm::vec4{1.0f}
+                    glm::vec4{default_light_col, 1.0f}
                 }
             },
             EmissiveEntityRenderer::RenderData{
                 scene_context.texture_loader.default_white_texture()
-            }
-            )
-    );
+            }));
 
     light_element->update_instance_data();
     return light_element;
