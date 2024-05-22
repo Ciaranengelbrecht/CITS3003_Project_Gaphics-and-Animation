@@ -201,6 +201,9 @@ void EditorScene::EmissiveMaterialComponent::add_emissive_material_imgui_edit_se
     ImGui::Text("Emissive Material");
     // Emissive colour control
     material_changed |= ImGui::ColorEdit3("Emission Colour", &material.emission_tint[0]);
+     ImGui::Spacing();
+    material_changed |= ImGui::DragFloat("Shininess", &material.shininess, 0.1f, 0.0f, 100.0f, "%.2f");
+
     ImGui::Spacing();
     if (material_changed) {
         update_instance_data();
